@@ -14,7 +14,11 @@ A social media web-application with Django.
 <li>Chats using websockets</li>
 <li>Video Calls</li>
 
-## Adding env variables
+## Installation
+
+### Ensure you're running Python 3.11+
+
+### Adding env variables
 
 - Add env variables to ".test.env" and rename it to ".env"
 
@@ -22,7 +26,11 @@ A social media web-application with Django.
 
 - Add agora app_id to .env and to https://github.com/Ronik22/Django_Social_Network_App/blob/main/blog/static/blog/js/streams.js#L2
 
-## Installation
+### Add django-allauth config
+
+https://django-allauth.readthedocs.io/en/latest/installation.html#post-installation
+
+### Run commands to stand up the server
 
 ```bash
     $ sudo apt-get install build-essential autoconf libtool libffi-dev pkg-config python3-dev python3-setuptools python3-testresources
@@ -37,15 +45,11 @@ A social media web-application with Django.
 ```
 
 
-## Add django-allauth config
+### Accessory instructions
 
-https://django-allauth.readthedocs.io/en/latest/installation.html#post-installation
-
-## Others
-
-- To use other DB edit this https://github.com/Ronik22/Django_Social_Network_App/blob/main/myproject/settings.py#L107
-- To use other providers edit this https://github.com/Ronik22/Django_Social_Network_App/blob/main/myproject/settings.py#L205
-- To use redis instead edit this https://github.com/Ronik22/Django_Social_Network_App/blob/main/myproject/settings.py#L197
+- To use other DB edit this settings.py#L107
+- To use other providers edit this settings.py#L205
+- To use redis instead edit this settings.py#L197
 
 ## Running Tests
 
