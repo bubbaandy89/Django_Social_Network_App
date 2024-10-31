@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/3.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
+
 import os
 from pathlib import Path
 from typing import List, Tuple, Union
@@ -21,9 +22,9 @@ from dotenv import load_dotenv
 env_path: Path = Path(".") / ".env"
 load_dotenv(dotenv_path=env_path)
 
-SITE_NAME = "CSCTN.net"
-SITE_DOMAIN = "www.csctn.net"
-PROTOCOL = "http"
+SITE_NAME = os.environ["SITE_NAME"]
+SITE_DOMAIN = os.environ["SITE_DOMAIN"]
+PROTOCOL = os.environ["PROTOCOL"]
 # PROTOCOL = "https"
 
 INTERNAL_IPS = [
@@ -34,7 +35,9 @@ INTERNAL_IPS = [
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR_OVERRIDE = os.environ.get("BASE_DIR_OVERRIDE", None)
 BASE_DIR: Path = (
-    Path(BASE_DIR_OVERRIDE) if BASE_DIR_OVERRIDE else Path(__file__).resolve().parent.parent
+    Path(BASE_DIR_OVERRIDE)
+    if BASE_DIR_OVERRIDE
+    else Path(__file__).resolve().parent.parent
 )
 LOG_DIR: Path = BASE_DIR.joinpath(os.environ.get("LOGS_DIR_NAME", "logs"))
 # Make sure the dirs for logs exist
@@ -42,6 +45,12 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 ADMINS: List[Tuple[str, str]] = [
     ("Andy", "bubbaandy89@gmail.com"),
+]
+
+EMAIL_ADMIN_RECIPIENTS: List[str] = [
+    "spitfiretn@gmail.com",  # Gary
+    "Mona261971@yahoo.com",  # Mona
+    "Badamson074@gmail.com",  # Ben
 ]
 
 # Quick-start development settings - unsuitable for production
@@ -54,8 +63,12 @@ SECRET_KEY: Union[str, None] = os.environ.get("SECRET_KEY", get_random_secret_ke
 DEBUG: Union[str, None] = os.environ.get("DEBUG", "False")
 
 # Define log file locations
-DEBUG_LOG_FILE_PATH = LOG_DIR.joinpath(os.environ.get("DEBUG_LOG_FILE_NAME", "debug.log"))
-DAPHNE_LOG_FILE_PATH = LOG_DIR.joinpath(os.environ.get("DAPHNE_LOG_FILE_NAME", "daphne.log"))
+DEBUG_LOG_FILE_PATH = LOG_DIR.joinpath(
+    os.environ.get("DEBUG_LOG_FILE_NAME", "debug.log")
+)
+DAPHNE_LOG_FILE_PATH = LOG_DIR.joinpath(
+    os.environ.get("DAPHNE_LOG_FILE_NAME", "daphne.log")
+)
 
 LOGGING = {
     "version": 1,
@@ -341,8 +354,12 @@ EMAIL_HOST: str = "smtp.gmail.com"
 EMAIL_PORT: str = os.environ.get("EMAIL_TLS_PORT")
 EMAIL_USE_TLS: str = True
 DEFAULT_FROM_EMAIL: str = "admin@django-social.com"
-EMAIL_HOST_USER: str = os.environ.get("EMAIL_USER")  # environment variable containing username
-EMAIL_HOST_PASSWORD: str = os.environ.get("EMAIL_PASS")  # environment variable containing password
+EMAIL_HOST_USER: str = os.environ.get(
+    "EMAIL_USER"
+)  # environment variable containing username
+EMAIL_HOST_PASSWORD: str = os.environ.get(
+    "EMAIL_PASS"
+)  # environment variable containing password
 
 GOOGLE_RECAPTCHA_SECRET_KEY: str = os.environ.get("GOOGLE_RECAPTCHA_SECRET_KEY")
 

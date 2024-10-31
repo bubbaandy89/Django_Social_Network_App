@@ -1,3 +1,5 @@
+from typing import Dict, Tuple
+
 import django_tables2 as tables
 
 from events.models import Event
@@ -28,8 +30,14 @@ class EventsTable(tables.Table):
 
     class Meta:
         model = Event
-        exclude: tuple[str] = ("event_id", "id", "event_poster", "host_name", "event_author")
-        attrs: dict[str, str] = {"class": "table"}
+        exclude: Tuple[str] = (
+            "event_id",
+            "id",
+            "event_poster",
+            "host_name",
+            "event_author",
+        )
+        attrs: Dict[str, str] = {"class": "table"}
         sequence = (
             "event_name",
             "event_start",

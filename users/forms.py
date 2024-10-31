@@ -1,10 +1,12 @@
 import os
+from typing import List
 
 from django import forms
 from django.conf import settings
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from PIL import Image
+from PIL.ImageFile import ImageFile
 
 from users.models import Profile
 from users.validators import validate_email
@@ -15,7 +17,7 @@ class UserRegisterForm(UserCreationForm):
 
     class Meta:
         model = User
-        fields = [
+        fields: List[str] = [
             "first_name",
             "last_name",
             "username",
@@ -30,7 +32,7 @@ class UserUpdateForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ["first_name", "last_name", "username", "email"]
+        fields: List[str] = ["first_name", "last_name", "username", "email"]
 
 
 class ProfileUpdateForm(forms.ModelForm):
@@ -40,7 +42,7 @@ class ProfileUpdateForm(forms.ModelForm):
     height = forms.FloatField(widget=forms.HiddenInput(), required=False)
 
     image = forms.ImageField(
-        label=("An image of you is a must for Verification. (Both of you if you are a couple)."),
+        label=("Image for your profile"),
         error_messages={"invalid": ("Image files only")},
         widget=forms.FileInput,
         required=True,
@@ -48,12 +50,10 @@ class ProfileUpdateForm(forms.ModelForm):
 
     class Meta:
         model = Profile
-        fields = [
+        fields: List[str] = [
             "date_of_birth",
             "bio",
-            "sls_username",
             "how_did_you_hear_about_us",
-            "relationship_status",
             "facebook_link",
             "instagram_link",
             "twitter_link",
@@ -71,9 +71,11 @@ class ProfileUpdateForm(forms.ModelForm):
         h = self.cleaned_data.get("height")
 
         if x and y and w and h:
-            image = Image.open(img.image)
-            cropped_image = image.crop((x, y, w + x, h + y))
-            resized_image = cropped_image.resize((300, 300), Image.ANTIALIAS)
+            image: ImageFile = Image.open(img.image)
+            cropped_image: Image.Image = image.crop((x, y, w + x, h + y))
+            resized_image: Image.Image = cropped_image.resize(
+                (300, 300), Image.Resampling.LANCZOS
+            )
             if img.image.path != os.path.join(settings.MEDIA_ROOT, "default.jpg"):
                 resized_image.save(img.image.path)
 

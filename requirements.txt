@@ -33,7 +33,7 @@ six
 sqlparse
 Twisted
 txaio
-typing-extensions
+
 tzdata
 urllib3
 uvicorn
@@ -44,6 +44,7 @@ gunicorn
 
 # Django
 Django
+django-stubs[compatible-mypy]
 django-allauth
 django-bootstrap-datepicker-plus
 django-ckeditor
@@ -80,3 +81,7 @@ ipython
 # Data Modeling
 pydantic
 pydantic-core
+
+# Type hinting
+types-python-dateutil
+typing-extensions

@@ -1,8 +1,11 @@
+from typing import Dict
+
 from bootstrap_datepicker_plus.widgets import DateTimePickerInput
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Button, Submit
 from django import forms
 from PIL import Image
+from PIL.ImageFile import ImageFile
 
 from events.models import Event
 
@@ -41,7 +44,8 @@ class NewEventForm(forms.ModelForm):
             "registration_deadline",
             "event_poster",
         ]
-        widgets = {
+
+        widgets: Dict[str, forms.Input] = {
             "event_start": DateTimePickerInput(),
             "event_end": DateTimePickerInput(),
             "registration_deadline": DateTimePickerInput(),
@@ -64,9 +68,11 @@ class NewEventForm(forms.ModelForm):
         h = self.cleaned_data.get("height")
 
         if x and y and w and h:
-            image = Image.open(img.event_poster)
-            cropped_image = image.crop((x, y, w + x, h + y))
-            resized_image = cropped_image.resize((300, 300), Image.ANTIALIAS)
+            image: ImageFile = Image.open(img.event_poster)
+            cropped_image: Image.Image = image.crop((x, y, w + x, h + y))
+            resized_image: Image.Image = cropped_image.resize(
+                (300, 300), Image.Resampling.LANCZOS
+            )
             resized_image.save(img.event_poster.path)
 
         return img

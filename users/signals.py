@@ -10,7 +10,7 @@ from .models import Profile, Relationship
 
 
 @receiver(post_save, sender=User)
-def create_profile(sender, instance, created, **kwargs):
+def create_profile(sender, instance, created, **kwargs) -> None:
     if created:
         Profile.objects.create(user=instance)
 
@@ -19,12 +19,12 @@ def create_profile(sender, instance, created, **kwargs):
 
 
 @receiver(post_save, sender=User)
-def save_profile(sender, instance, **kwargs):
+def save_profile(sender, instance, **kwargs) -> None:
     instance.profile.save()
 
 
 @receiver(post_save, sender=Relationship)
-def post_save_add_to_friends(sender, created, instance, **kwargs):
+def post_save_add_to_friends(sender, created, instance, **kwargs) -> None:
     sender_ = instance.sender
     receiver_ = instance.receiver
     if instance.status == "accepted":
@@ -38,6 +38,6 @@ def post_save_add_to_friends(sender, created, instance, **kwargs):
 
 
 @receiver(post_save, sender=User)
-def create_friendlist(sender, instance, created, **kwargs):
+def create_friendlist(sender, instance, created, **kwargs) -> None:
     if created:
         FriendList.objects.create(user=instance)

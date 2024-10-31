@@ -1,18 +1,25 @@
 import logging
 import random
 from itertools import chain
-from typing import Any, Optional, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.exceptions import SuspiciousOperation
+from django.core.files.uploadedfile import UploadedFile
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Model, Q
 from django.db.models.manager import BaseManager
 from django.forms import BaseModelForm
-from django.http import HttpRequest, HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.http import (
+    HttpRequest,
+    HttpResponse,
+    HttpResponsePermanentRedirect,
+    HttpResponseRedirect,
+    JsonResponse,
+)
+from django.shortcuts import get_object_or_404, redirect, render, render_to_response
 from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
@@ -27,7 +34,7 @@ from .models import Comment, Images, Post
 
 
 def handler500(request: HttpRequest, *args, **argv) -> HttpResponse:
-    response: HttpResponse = render("blog/500.html", {}, context_instance=RequestContext(request))
+    response: HttpResponse = render_to_response("blog/500.html", {})
     response.status_code = 500
     return response
 
@@ -35,7 +42,7 @@ def handler500(request: HttpRequest, *args, **argv) -> HttpResponse:
 """ Home page with all posts """
 
 
-def first(request) -> HttpResponse:
+def first(request: HttpRequest) -> HttpResponse:
     context: dict[str, BaseManager[Post]] = {"posts": Post.objects.all()}
     if request.user.is_authenticated:
         userobj: Profile = Profile.objects.get(id=request.user.id)
@@ -49,7 +56,7 @@ def first(request) -> HttpResponse:
 
 
 @login_required
-def posts_of_following_profiles(request) -> HttpResponse:
+def posts_of_following_profiles(request: HttpRequest) -> HttpResponse:
     profile: Profile = Profile.objects.get(user=request.user)
 
     if not is_user_verified(profile):
@@ -83,7 +90,7 @@ def posts_of_following_profiles(request) -> HttpResponse:
 
 
 @login_required
-def LikeView(request) -> Optional[JsonResponse]:
+def LikeView(request: HttpRequest) -> Optional[JsonResponse]:
     post: Post = get_object_or_404(Post, id=request.POST.get("id"))
     liked: bool = False
     if post.likes.filter(id=request.user.id).exists():
@@ -96,10 +103,12 @@ def LikeView(request) -> Optional[JsonResponse]:
     else:
         post.likes.add(request.user)
         liked = True
-        notify = Notification(post=post, sender=request.user, user=post.author, notification_type=1)
-        notify.save()
+        notification = Notification(
+            post=post, sender=request.user, user=post.author, notification_type=1
+        )
+        notification.save()
 
-    context: dict[str, Any] = {
+    context: Dict[str, Any] = {
         "post": post,
         "total_likes": post.total_likes(),
         "liked": liked,
@@ -114,7 +123,7 @@ def LikeView(request) -> Optional[JsonResponse]:
 
 
 @login_required
-def SaveView(request) -> Optional[JsonResponse]:
+def SaveView(request: HttpRequest) -> Optional[JsonResponse]:
     post: Post = get_object_or_404(Post, id=request.POST.get("id"))
     saved: bool = False
     if post.saves.filter(id=request.user.id).exists():
@@ -124,7 +133,7 @@ def SaveView(request) -> Optional[JsonResponse]:
         post.saves.add(request.user)
         saved = True
 
-    context: dict[str, Any] = {
+    context: Dict[str, Any] = {
         "post": post,
         "total_saves": post.total_saves(),
         "saved": saved,
@@ -139,7 +148,7 @@ def SaveView(request) -> Optional[JsonResponse]:
 
 
 @login_required
-def LikeCommentView(request) -> Optional[JsonResponse]:
+def LikeCommentView(request: HttpRequest) -> Optional[JsonResponse]:
     # , id1, id2              id1=post.pk id2=reply.pk
     comment_pk = request.POST.get("comment_pk")
     post_pk = request.POST.get("post_pk")
@@ -186,13 +195,13 @@ def LikeCommentView(request) -> Optional[JsonResponse]:
 class PostListView(LoginRequiredMixin, ListView):
     model = Post
     template_name: str = "blog/home.html"
-    context_object_name: str = "posts"
-    ordering: list[str] = ["-date_posted"]
+    context_object_name: Optional[str] = "posts"
+    ordering: Sequence[str] = ["-date_posted"]
     paginate_by: int = 5
 
-    def get_context_data(self, *args, **kwargs) -> dict[str, Any]:
-        context: dict[str, Any] = super(PostListView, self).get_context_data()
-        users: list[User] = list(User.objects.exclude(pk=self.request.user.pk))
+    def get_context_data(self, *args, **kwargs) -> Dict[str, Any]:
+        context: Dict[str, Any] = super(PostListView, self).get_context_data()
+        users: List[User] = list(User.objects.exclude(pk=self.request.user.pk))
 
         if len(users) > 3:
             cnt: int = 3
@@ -202,7 +211,9 @@ class PostListView(LoginRequiredMixin, ListView):
         context["random_users"] = random_users
         return context
 
-    def render_to_response(self, context):
+    def render_to_response(
+        self, context, **response_kwargs
+    ) -> Union[HttpResponseRedirect, HttpResponsePermanentRedirect, HttpResponse]:
         userobj: Profile = Profile.objects.get(id=self.request.user.id)
 
         if not is_user_verified(userobj):
@@ -226,7 +237,9 @@ class UserPostListView(LoginRequiredMixin, ListView):
         user: User = get_object_or_404(User, username=self.kwargs.get("username"))
         return Post.objects.filter(author=user).order_by("-date_posted")
 
-    def render_to_response(self, context):
+    def render_to_response(
+        self, context, **response_kwargs
+    ) -> Union[HttpResponseRedirect, HttpResponsePermanentRedirect, HttpResponse]:
         userobj: Profile = Profile.objects.get(id=self.request.user.id)
 
         if not is_user_verified(userobj):
@@ -241,7 +254,7 @@ class UserPostListView(LoginRequiredMixin, ListView):
 
 
 @login_required
-def PostDetailView(request, pk) -> Union[JsonResponse, HttpResponse]:
+def PostDetailView(request: HttpRequest, pk: str) -> Union[JsonResponse, HttpResponse]:
     userobj: Profile = Profile.objects.get(id=request.user.id)
 
     if not is_user_verified(userobj):
@@ -340,10 +353,10 @@ class PostCreateView(LoginRequiredMixin, CreateView):
     model = Post
     form_class = CreateUpdatePostForm
 
-    def post(self, request, *args, **kwargs) -> HttpResponse:
-        form_class = self.get_form_class()
+    def post(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
+        form_class: type[BaseModelForm] = self.get_form_class()
         form: BaseModelForm = self.get_form(form_class)
-        files = request.FILES.getlist("images")
+        files: List[UploadedFile] = request.FILES.getlist("images")
         form.instance.author = self.request.user
         post: Post = form.instance
         if form.is_valid():
@@ -360,7 +373,9 @@ class PostCreateView(LoginRequiredMixin, CreateView):
         else:
             return self.form_invalid(form)
 
-    def render_to_response(self, context):
+    def render_to_response(
+        self, context, **response_kwargs
+    ) -> Union[HttpResponseRedirect, HttpResponsePermanentRedirect, HttpResponse]:
         userobj: Profile = Profile.objects.get(id=self.request.user.id)
 
         if not is_user_verified(userobj):
@@ -403,7 +418,9 @@ class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         else:
             return self.form_invalid(form)
 
-    def render_to_response(self, context):
+    def render_to_response(
+        self, context, **response_kwargs
+    ) -> Union[HttpResponseRedirect, HttpResponsePermanentRedirect, HttpResponse]:
         userobj: Profile = Profile.objects.get(id=self.request.user.id)
 
         if not is_user_verified(userobj):
@@ -420,12 +437,14 @@ class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     success_url: str = "/"
 
     def test_func(self) -> bool:
-        post: Model = self.get_object()
+        post: Post = self.get_object()
         if self.request.user == post.author:
             return True
         return False
 
-    def render_to_response(self, context):
+    def render_to_response(
+        self, context, **response_kwargs
+    ) -> Union[HttpResponseRedirect, HttpResponsePermanentRedirect, HttpResponse]:
         userobj: Profile = Profile.objects.get(id=self.request.user.id)
 
         if not is_user_verified(userobj):

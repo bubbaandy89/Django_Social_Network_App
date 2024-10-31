@@ -3,7 +3,7 @@ from typing import Any, Optional, Union
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, UserManager
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.db.models.manager import BaseManager
@@ -35,8 +35,10 @@ def room_enroll(request) -> HttpResponse:
 
 
 @login_required
-def room_choice(request, friend_id) -> Union[HttpResponseRedirect, HttpResponsePermanentRedirect]:
-    friend = User.objects.filter(pk=friend_id)
+def room_choice(
+    request, friend_id
+) -> Union[HttpResponseRedirect, HttpResponsePermanentRedirect]:
+    friend: UserManager[User] = User.objects.filter(pk=friend_id)
     if not friend:
         messages.error(request, "Invalid User ID")
         return redirect("room-enroll")
@@ -44,14 +46,15 @@ def room_choice(request, friend_id) -> Union[HttpResponseRedirect, HttpResponseP
         messages.error(request, "You need to be friends to chat")
         return redirect("room-enroll")
 
-    room: BaseManager = Room.objects.filter(
-        Q(author=request.user, friend=friend[0]) | Q(author=friend[0], friend=request.user)
+    room: BaseManager[Room] = Room.objects.filter(
+        Q(author=request.user, friend=friend[0])
+        | Q(author=friend[0], friend=request.user)
     )
     if not room:
         create_room: Room = Room(author=request.user, friend=friend[0])
         create_room.save()
-        room = create_room.room_id
-        return redirect("room", room, friend_id)
+        room_id: int = create_room.room_id
+        return redirect("room", room_id, friend_id)
 
     return redirect("room", room[0].room_id, friend_id)
 
@@ -107,15 +110,15 @@ def shoutbox(
     except ShoutBox.DoesNotExist:
         messages.error(request, "Invalid ShoutBox ID")
         # return redirect("shoutbox-join")
-
-    if shoutbox.shoutbox_name.lower() == "admin" and not request.user.is_staff:
-        raise PermissionDenied()  # Only Admins/staff in admin chat
-    elif not is_user_verified(userobj):
-        raise PermissionDenied()  # Only verified individuals can get into group chat
-    else:
-        if request.user not in shoutbox.participants.all():
-            logging.debug(f"Adding user {userobj} to {shoutbox}")
-            shoutbox.participants.add(request.user)
+    if shoutbox:
+        if shoutbox.shoutbox_name.lower() == "admin" and not request.user.is_staff:
+            raise PermissionDenied()  # Only Admins/staff in admin chat
+        elif not is_user_verified(userobj):
+            raise PermissionDenied()  # Only verified individuals can get into group chat
+        else:
+            if request.user not in shoutbox.participants.all():
+                logging.debug(f"Adding user {userobj} to {shoutbox}")
+                shoutbox.participants.add(request.user)
 
     shouts: BaseManager = Shout.objects.filter(shoutbox_id=shoutbox_id).order_by("date")
 

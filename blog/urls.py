@@ -1,4 +1,6 @@
-from django.urls import URLResolver, path
+from typing import List, Union
+
+from django.urls import URLPattern, URLResolver, path
 
 from . import views
 from .views import (
@@ -16,7 +18,9 @@ from .views import (
     posts_of_following_profiles,
 )
 
-urlpatterns: list[URLResolver] = [
+handler500 = "blog.views.handler500"
+
+urlpatterns: List[Union[URLResolver, URLPattern]] = [
     path("", views.first, name="firsthome"),
     path("home/", PostListView.as_view(), name="blog-home"),
     path("feed/", posts_of_following_profiles, name="posts-follow-view"),

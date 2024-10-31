@@ -24,15 +24,16 @@ def create_new_message(me, friend, message, room_id) -> Chat:
 
 
 @sync_to_async
-def create_new_shout(me, message, shoutbox_id) -> Chat:
+def create_new_shout(me, message, shoutbox_id) -> Shout:
     shoutbox: ShoutBox = ShoutBox.objects.filter(shoutbox_id=shoutbox_id)[0]
     author_user: User = User.objects.filter(username=me)[0]
-    new_shout: Shout = Shout.objects.create(author=author_user, shoutbox=shoutbox, text=message)
+    new_shout: Shout = Shout.objects.create(
+        author=author_user, shoutbox=shoutbox, text=message
+    )
     return new_shout
 
 
 class ChatRoomConsumer(AsyncWebsocketConsumer):
-
     """Connect"""
 
     async def connect(self):
@@ -74,7 +75,10 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
         user_image = event["user_image"]
 
         await create_new_message(
-            me=self.scope["user"], friend=username, message=message, room_id=self.room_name
+            me=self.scope["user"],
+            friend=username,
+            message=message,
+            room_id=self.room_name,
         )
 
         await self.send(
@@ -89,7 +93,6 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
 
 
 class ShoutBoxConsumer(AsyncWebsocketConsumer):
-
     """Connect"""
 
     async def connect(self):
@@ -103,7 +106,9 @@ class ShoutBoxConsumer(AsyncWebsocketConsumer):
     """Disconnect"""
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(self.shoutbox_group_name, self.channel_name)
+        await self.channel_layer.group_discard(
+            self.shoutbox_group_name, self.channel_name
+        )
 
     """Receive"""
 
@@ -130,7 +135,9 @@ class ShoutBoxConsumer(AsyncWebsocketConsumer):
         username = event["username"]
         user_image = event["user_image"]
 
-        await create_new_shout(me=self.scope["user"], message=message, shoutbox_id=self.shoutbox_id)
+        await create_new_shout(
+            me=self.scope["user"], message=message, shoutbox_id=self.shoutbox_id
+        )
 
         await self.send(
             text_data=json.dumps(

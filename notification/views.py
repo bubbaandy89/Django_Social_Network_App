@@ -18,7 +18,9 @@ from notification.models import Notification
 @login_required
 def ShowNotifications(request) -> HttpResponse:
     user: str = request.user
-    notifications: BaseManager = Notification.objects.filter(user=user).order_by("-date")
+    notifications: BaseManager = Notification.objects.filter(user=user).order_by(
+        "-date"
+    )
     context: dict[str, BaseManager] = {
         "notifications": notifications,
     }

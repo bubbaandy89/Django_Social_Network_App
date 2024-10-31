@@ -16,7 +16,7 @@ def get_image_filename(instance, filename) -> str:
 
 
 class Event(models.Model):
-    event_id = models.CharField(max_length=100, default=uuid.uuid4)
+    event_id = models.CharField(max_length=100, default=str(uuid.uuid4()))
     event_posted = models.DateTimeField(default=timezone.now)
     event_author = models.ForeignKey(Profile, on_delete=models.CASCADE)  # new
     event_name = models.CharField(max_length=120)
@@ -26,7 +26,9 @@ class Event(models.Model):
     host_name = models.CharField(max_length=100)
     event_description = models.CharField(max_length=10000)
     registration_deadline = models.DateTimeField()
-    event_poster = models.ImageField(upload_to=get_image_filename, null=True, blank=True)
+    event_poster = models.ImageField(
+        upload_to=get_image_filename, null=True, blank=True
+    )
     event_participants: models.ManyToManyField = models.ManyToManyField(
         Profile, related_name="event_participants", null=True, blank=True
     )
@@ -39,9 +41,9 @@ class Event(models.Model):
         posted = self.event_posted.astimezone(timezone.get_current_timezone()).strftime(
             "%Y-%m-%d %I:%M %p"
         )
-        starts: str = self.event_start.astimezone(timezone.get_current_timezone()).strftime(
-            "%Y-%m-%d %I:%M %p"
-        )
+        starts: str = self.event_start.astimezone(
+            timezone.get_current_timezone()
+        ).strftime("%Y-%m-%d %I:%M %p")
         ends: str = self.event_end.astimezone(timezone.get_current_timezone()).strftime(
             "%Y-%m-%d %I:%M %p"
         )
